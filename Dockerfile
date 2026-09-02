@@ -13,6 +13,6 @@ COPY packages ./packages
 RUN pip install --no-cache-dir -e .
 COPY --from=web /src/apps/web/dist ./apps/web/dist
 ENV PORT=8000
-ENV REVIEWDESK_RUNS_DIR=/var/data/runs
+ENV REVIEWDESK_RUNS_DIR=/tmp/reviewdesk-runs
 EXPOSE 8000
 CMD ["sh", "-c", "uvicorn reviewdesk_api.main:app --host 0.0.0.0 --port ${PORT}"]

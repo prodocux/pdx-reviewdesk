@@ -2,13 +2,9 @@ services:
   - type: web
     name: pdx-reviewdesk
     runtime: docker
-    plan: starter
+    plan: free
     dockerfilePath: ./Dockerfile
     healthCheckPath: /health
-    disk:
-      name: reviewdesk-runs
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
       - key: REVIEWDESK_RUNS_DIR
-        value: /var/data/runs
+        value: /tmp/reviewdesk-runs

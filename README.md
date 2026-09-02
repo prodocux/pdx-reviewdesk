@@ -147,11 +147,14 @@ a static-only Vercel site: the products being promoted are Python packages.
 ### Render (recommended)
 
 This repo includes a Render Blueprint ([render.yaml](render.yaml)) that
-builds the Docker image ([Dockerfile](Dockerfile)), attaches a 1 GB disk at
-`/var/data`, and sets `REVIEWDESK_RUNS_DIR=/var/data/runs`.
+builds the Docker image ([Dockerfile](Dockerfile)) on the **Free** compute
+plan. No payment method is required. Free web services cannot attach a
+disk, so run files live on the ephemeral filesystem and are lost on
+spin-down (about 15 minutes idle). That is enough for judging.
 
 In the [Render Dashboard](https://dashboard.render.com): **New → Blueprint**
-→ connect `prodocux/pdx-reviewdesk`. Starter plan is enough for judging.
+→ connect `prodocux/pdx-reviewdesk`. Or **New → Web Service**, select the
+same repo, Docker runtime, and the Free instance type (do not add a disk).
 
 Same-origin SPA + API, so CORS usually does not need a public origin list.
 
