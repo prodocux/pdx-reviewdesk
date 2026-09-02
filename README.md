@@ -1,21 +1,25 @@
 # PDX ReviewDesk
 
+Live demo: [pdx-reviewdesk.onrender.com](https://pdx-reviewdesk.onrender.com/)
 Public repository: [github.com/prodocux/pdx-reviewdesk](https://github.com/prodocux/pdx-reviewdesk)
 
-Agent-native dossier review that **consumes published**
+A WebMCP desk where humans and agents share a regulated dossier. This
+submission is the **review** slice: ProDocuX verifies evidence, PDX Artifact
+Engine binds checkpoints and approvals to digests, and the page never
+re-implements those checks. Next, the same desk becomes **co-authoring**—
+agents fill documents from named files or search results, the human reviews
+in the tab, then the packet exports in the formats you ask for.
+
+Consumes published
 [`prodocux==0.3.0rc4`](https://pypi.org/project/prodocux/0.3.0rc4/) and
 [`pdx-artifact-engine==0.3.0a4`](https://pypi.org/project/pdx-artifact-engine/0.3.0a4/).
-
-WebMCP is the in-tab control surface. It is not a second kernel. Checks come
-from ProDocuX; digest-bound checkpoints and approvals come from PDX Artifact
-Engine.
 
 This is not PDX EvidenceGate. EvidenceGate is a Nutrient DWS product on the
 same upstream packages. ReviewDesk is the WebMCP consumer of those packages.
 
 License: **Apache License 2.0**. See [LICENSE](LICENSE).
 
-## What people and agents do
+## What people and agents do today
 
 The page walks **Documents → Findings → Corrections → Close**.
 
@@ -57,7 +61,8 @@ not registered.
 
 ## Judge / WebMCP test
 
-No login. Open the hosted app (or `http://localhost:5173` locally).
+No login. Open [the hosted app](https://pdx-reviewdesk.onrender.com/)
+(or `http://localhost:5173` locally).
 
 1. ChatGPT desktop in-app browser, or Chrome 149+ with
    `chrome://flags/#enable-webmcp-testing` enabled, then restart Chrome.
@@ -71,12 +76,26 @@ No login. Open the hosted app (or `http://localhost:5173` locally).
 A timed walkthrough is in [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md).
 
 `GET /health` must report `prodocux: 0.3.0rc4` and
-`pdx_artifact_engine: 0.3.0a4`.
+`pdx_artifact_engine: 0.3.0a4`. Free Render may take about a minute to
+wake if the service has spun down.
+
+## What's next
+
+Review of existing PDFs is not the end state. The desk should be where
+humans and agents **write the packet together**:
+
+1. The human names files or allows search.
+2. The agent fills the important documents on the same page.
+3. The human reviews, corrects, and accepts in the tab.
+4. ReviewDesk exports the agreed dossier in the requested formats.
+
+Today’s WebMCP review tools remain as the acceptance pass. Verification and
+digest-bound artifacts stay on published ProDocuX and PDX Artifact Engine.
 
 ## Quick start
 
 Python 3.12+ and Node.js 22+. Install wheels from PyPI, not from local
-ProDocuX worktrees.
+ProDocuX source trees.
 
 ### Windows (PowerShell)
 
@@ -141,10 +160,10 @@ installs the PyPI pins and asserts `site-packages` origins.
 
 ## Deploy
 
+Live: [https://pdx-reviewdesk.onrender.com/](https://pdx-reviewdesk.onrender.com/)
+
 One Python process serves `/v1`, `/health`, and the built SPA. Do not ship
 a static-only Vercel site: the products being promoted are Python packages.
-
-### Render (recommended)
 
 This repo includes a Render Blueprint ([render.yaml](render.yaml)) that
 builds the Docker image ([Dockerfile](Dockerfile)) on the **Free** compute
