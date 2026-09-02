@@ -33,7 +33,8 @@ import {
   summarize,
   verifyPackage,
 } from "./lib/api";
-import type { ActivityEvent, Actor, BenchmarkResult, DocumentId, DossierInfo, Finding, Run, UiStage, VerifyResult } from "./lib/types";
+import { stageEvents } from "./lib/stageLog";
+import type { Actor, BenchmarkResult, DocumentId, DossierInfo, Finding, Run, UiStage, VerifyResult } from "./lib/types";
 import { ToolHost, getModelContext } from "./lib/webmcp";
 import { pathRunId, rememberRun, rememberedRunId, runPath, RUN_CHANNEL } from "./lib/session";
 
@@ -56,23 +57,6 @@ const STEPS: Array<{ id: UiStage; label: string }> = [
   { id: "closed", label: "Close" },
 ];
 
-const STAGE_TOOLS: Record<UiStage, string[]> = {
-  documents: ["start_demo_audit", "run_benchmark", "open_source_document"],
-  findings: ["run_checks", "select_finding", "assign_finding", "open_source_document"],
-  corrections: [
-    "select_finding",
-    "assign_finding",
-    "propose_correction",
-    "commit_correction",
-    "reject_draft",
-    "confirm_observed_fact",
-    "request_human_confirmation",
-    "rewrite_locked_reference",
-    "open_source_document",
-  ],
-  closed: ["request_human_approval", "verify_package", "export_audit_package"],
-};
-
 function visualStep(run: Run | null): number {
   if (!run) return -1;
   if (isClosed(run) || run.stage === "closed") return 3;
@@ -80,11 +64,6 @@ function visualStep(run: Run | null): number {
   if (run.stage === "findings") return 1;
   if (run.findings.some((item) => item.status === "needs_review")) return 2;
   return 3;
-}
-
-function stageEvents(events: ActivityEvent[], stage: UiStage): ActivityEvent[] {
-  const tools = new Set(STAGE_TOOLS[stage]);
-  return events.filter((event) => event.tool && tools.has(event.tool));
 }
 
 async function downloadAudit(run: Run, actor: Actor = "human", channel: "ui" | "webmcp" = "ui") {
@@ -151,6 +130,7 @@ export default function App() {
   const subject = run?.documents.find((item) => item.role === "subject" || item.document_id === "product-spec");
   const refs = run?.documents.filter((item) => item.document_id !== "product-spec") ?? [];
   const closed = isClosed(run);
+  const stepEvents = run ? stageEvents(run.activities, closed ? "closed" : stage) : [];
   const focusKind = humanAction ? "action" : closed ? "closed" : "stage";
 
   useEffect(() => {
@@ -1233,10 +1213,11 @@ export default function App() {
             </div>
           </section>
 
+          {(!closed || stepEvents.length > 0) && (
           <ActivityLog
             caption="This step"
             title="Human vs agent"
-            events={stageEvents(run.activities, closed ? "closed" : stage)}
+            events={stepEvents}
             onReplay={(event) => {
               if (!event.viewer_document_id || !event.viewer_page) return;
               withActor(async () =>
@@ -1246,6 +1227,7 @@ export default function App() {
               ).catch(() => undefined);
             }}
           />
+          )}
         </div>
       )}
 

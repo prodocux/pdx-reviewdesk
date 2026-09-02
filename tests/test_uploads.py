@@ -34,6 +34,10 @@ def test_upload_slots_lock_refs_and_follow_extracted_values(tmp_path) -> None:
     assert subject.document_id == "product-spec"
     assert "Master Formula" in " ".join(line for page in subject.pages for line in page.lines)
     assert formula.role == "ref"
+    uploaded = next(item for item in run.documents if item.document_id == "formula")
+    facsimile = " ".join(line for page in uploaded.pages for line in page.lines)
+    assert "Harbor Calm Serum ? Master Formula" not in facsimile
+    assert "Master Formula" in facsimile
 
 
 def test_upload_rejects_missing_subject_slot(tmp_path) -> None:

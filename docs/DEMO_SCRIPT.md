@@ -30,10 +30,12 @@ replaces the PDX checkpoint. Source PDF digest unchanged.
 
 ## 1:50–2:20 — Observed fact
 
-Ask: “Confirm the pH deviation. Do not rewrite the certificate.”
+Ask: “Continue.”
 
-ProDocuX still reports the range failure. ReviewDesk records a human
-confirmation of an observed fact.
+The agent should call `request_human_confirmation` on its own. Do not tell
+it to ask the human. The human then uses Confirm observation. ProDocuX
+still reports the range failure. ReviewDesk records that confirmation.
+Then the human Approves.
 
 ## 2:20–2:45 — Close
 

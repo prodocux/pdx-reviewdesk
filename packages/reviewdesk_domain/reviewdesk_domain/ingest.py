@@ -119,6 +119,14 @@ def _fields_for_slot(document_id: DocumentId, pages: list[list[str]]) -> list[tu
     return list(unique.values())
 
 
+def _restore_facsimile_punctuation(line: str) -> str:
+    return (
+        line.replace(" ? Master Formula", " — Master Formula")
+        .replace("? Master Formula", "— Master Formula")
+        .replace(" \ufffd Master Formula", " — Master Formula")
+    )
+
+
 def _pages(document_id: DocumentId, filename: str, extracted: list[list[str]]) -> list[DocumentPage]:
     slot = SLOTS[document_id]
     if not extracted or not extracted[0]:
@@ -130,7 +138,8 @@ def _pages(document_id: DocumentId, filename: str, extracted: list[list[str]]) -
             )
         ]
     pages: list[DocumentPage] = []
-    for index, lines in enumerate(extracted, start=1):
+    for index, raw in enumerate(extracted, start=1):
+        lines = [_restore_facsimile_punctuation(line) for line in raw]
         heading = lines[0] if lines else slot["title"]
         body = lines[1:] if len(lines) > 1 else lines
         highlight = next((line for line in lines if "revision" in line.lower() or "pH" in line), None)

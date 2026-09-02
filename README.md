@@ -70,8 +70,10 @@ No login. Open [the hosted app](https://pdx-reviewdesk.onrender.com/)
 3. Ask: “Open the formula-version finding and show the approved formula.”
 4. Ask: “Propose revision 3, then commit.” Confirm the source PDF digest
    does not change.
-5. Ask: “Confirm the pH deviation. Do not rewrite the certificate.”
-6. Use the UI **Approve** action to close. There is no WebMCP approve tool.
+5. Ask: “Continue.” The agent should request human confirmation itself.
+   The human uses **Confirm observation**, then **Approve**. There is no
+   WebMCP tool that confirms a human-assigned observation or records
+   approval.
 
 A timed walkthrough is in [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md).
 

@@ -3,9 +3,27 @@ from __future__ import annotations
 import hashlib
 import zlib
 
+# Helvetica + WinAnsiEncoding can show these; raw latin-1 replace turns them into "?".
+_WINANSI = str.maketrans(
+    {
+        "\u2014": "\x97",
+        "\u2013": "\x96",
+        "\u2018": "\x91",
+        "\u2019": "\x92",
+        "\u201c": "\x93",
+        "\u201d": "\x94",
+        "\u2026": "\x85",
+        "\u00a0": " ",
+    }
+)
+
 
 def _escape(text: str) -> str:
     return text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+
+
+def _pdf_string(text: str) -> str:
+    return _escape(text.translate(_WINANSI))
 
 
 def build_pdf(
@@ -22,10 +40,10 @@ def build_pdf(
     """
     content_objects: list[bytes] = []
     for heading, lines in pages:
-        chunks = ["BT", "/F1 16 Tf", "72 780 Td", f"({_escape(heading)}) Tj"]
+        chunks = ["BT", "/F1 16 Tf", "72 780 Td", f"({_pdf_string(heading)}) Tj"]
         for line in lines:
-            chunks.extend(["0 -22 Td", "/F1 11 Tf", f"({_escape(line)}) Tj"])
-        chunks.extend(["0 -40 Td", "/F1 8 Tf", f"({_escape(footer)}) Tj", "ET"])
+            chunks.extend(["0 -22 Td", "/F1 11 Tf", f"({_pdf_string(line)}) Tj"])
+        chunks.extend(["0 -40 Td", "/F1 8 Tf", f"({_pdf_string(footer)}) Tj", "ET"])
         content_objects.append("\n".join(chunks).encode("latin-1", "replace"))
 
     objects: list[bytes] = []
@@ -46,7 +64,9 @@ def build_pdf(
         payload = zlib.compress(stream) if compress else stream
         filt = " /Filter /FlateDecode" if compress else ""
         objects.append(f"<< /Length {len(payload)}{filt} >>\nstream\n".encode() + payload + b"\nendstream")
-    objects.append(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+    objects.append(
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"
+    )
 
     out = bytearray(b"%PDF-1.4\n")
     offsets = [0]
@@ -63,7 +83,7 @@ def build_pdf(
     out.extend(
         (
             f"trailer << /Size {len(objects) + 1} /Root 1 0 R /Info << "
-            f"/Title ({_escape(title)}) >> >>\nstartxref\n{xref_at}\n%%EOF\n"
+            f"/Title ({_pdf_string(title)}) >> >>\nstartxref\n{xref_at}\n%%EOF\n"
         ).encode()
     )
     return bytes(out)

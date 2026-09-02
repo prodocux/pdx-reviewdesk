@@ -1,5 +1,9 @@
 import type { DocumentId, DocumentPage, DossierDocument } from "../lib/types";
 
+function facsimileText(line: string): string {
+  return line.replace(/\s\?\sMaster Formula/g, " — Master Formula").replace(/\?\sMaster Formula/g, "— Master Formula");
+}
+
 export function DocumentPane({
   document,
   page,
@@ -34,14 +38,14 @@ export function DocumentPane({
         <article className="paper">
           <p>{comparedLeaf ? "Original locked PDF" : leaf.title}</p>
           {leaf.lines.map((line) =>
-            line === leaf.highlight ? <mark key={line}>{line}</mark> : <span key={line}>{line}</span>,
+            line === leaf.highlight ? <mark key={line}>{facsimileText(line)}</mark> : <span key={line}>{facsimileText(line)}</span>,
           )}
         </article>
         {comparedLeaf ? (
           <article className="paper reviewed">
             <p>{compared?.title}</p>
             {comparedLeaf.lines.map((line) =>
-              line === comparedLeaf.highlight ? <mark key={line}>{line}</mark> : <span key={line}>{line}</span>,
+              line === comparedLeaf.highlight ? <mark key={line}>{facsimileText(line)}</mark> : <span key={line}>{facsimileText(line)}</span>,
             )}
           </article>
         ) : null}
