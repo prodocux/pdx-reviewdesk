@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.vite/
+coverage/
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+.pytest_cache/
+*.egg-info/
+runs/
+apps/web/dist/
+BUILD_LOG.md
+docs/DEVPOST_SUBMISSION_DRAFT.md

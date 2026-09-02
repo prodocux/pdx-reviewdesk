@@ -1,0 +1,30 @@
+{
+  "product_name": "Harbor Calm Serum",
+  "dossier_id": "harbor-calm-serum-2026",
+  "packages": {
+    "prodocux": "0.3.0rc4",
+    "pdx-artifact-engine": "0.3.0a4"
+  },
+  "documents": ["product-spec", "formula", "coa"],
+  "prodocux_checks": [
+    "product-identity",
+    "formula-version",
+    "batch-identity",
+    "ph-range",
+    "required-manufacturer"
+  ],
+  "disagreements": [
+    {
+      "check_id": "formula-version",
+      "authority": "formula revision 3",
+      "compared": "specification revision 2",
+      "action": "correct normalized specification reference"
+    },
+    {
+      "check_id": "ph-range",
+      "authority": "specification 4.8-5.8",
+      "compared": "certificate pH 6.4",
+      "action": "confirm observed batch fact"
+    }
+  ]
+}

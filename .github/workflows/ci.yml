@@ -1,0 +1,45 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[dev]"
+      - run: python -m pytest -q -p no:cacheprovider
+      - name: Verify public dependency origins
+        run: |
+          python - <<'PY'
+          import pathlib, prodocux_kernel, pdx_artifact_core
+          from importlib.metadata import version
+          assert version("prodocux") == "0.3.0rc4"
+          assert version("pdx-artifact-engine") == "0.3.0a4"
+          for module in (prodocux_kernel, pdx_artifact_core):
+              path = pathlib.Path(module.__file__).resolve()
+              assert "site-packages" in str(path), path
+              print(path)
+          PY
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
