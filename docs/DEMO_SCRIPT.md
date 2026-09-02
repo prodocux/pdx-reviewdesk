@@ -41,3 +41,6 @@ Then the human Approves.
 
 The human uses the UI Approve action. The WebMCP tool surface cannot invoke
 human-only approval. Export the audit JSON (no source bytes).
+
+To start another pass, the agent should call `new_review` or
+`start_demo_audit`. Reloading the closed run URL restores the same audit.

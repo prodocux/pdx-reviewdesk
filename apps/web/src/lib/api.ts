@@ -445,8 +445,9 @@ export function availableTools(run: Run | null): ToolSpec[] {
     },
     {
       name: "start_demo_audit",
-      description:
-        "Open a canned dossier. Default is Harbor Calm Serum. Custom PDFs must be dropped by the human into the three slots. ProDocuX extracts selectable text; the files still need Product, Formula revision, Acceptable pH, and pH result labels. WebMCP cannot send binary files.",
+      description: complete
+        ? "The current audit is closed. Call this to start a NEW Harbor Calm Serum run. Do not reload the page; a refresh of this URL restores the same closed run. The previous run is unchanged. If the human will drop PDFs instead, call new_review first."
+        : "Open a canned dossier. Default is Harbor Calm Serum. Custom PDFs must be dropped by the human into the three slots. ProDocuX extracts selectable text; the files still need Product, Formula revision, Acceptable pH, and pH result labels. WebMCP cannot send binary files.",
       inputSchema: {
         type: "object",
         properties: {
@@ -458,6 +459,17 @@ export function availableTools(run: Run | null): ToolSpec[] {
         additionalProperties: false,
       },
       enabled: true,
+      stable: true,
+    },
+    {
+      name: "new_review",
+      description: complete
+        ? "This audit is closed. Call this instead of reloading. Reloading /runs/{id} restores the same closed run. Returns to the empty desk so the human can drop three PDFs, or so start_demo_audit can open a fresh Harbor run. The previous run stays at its URL."
+        : run
+          ? "Leave the current run and return to the empty desk. The previous run stays at its URL. Prefer this after Audit closed."
+          : "Already on the empty desk. The human can drop three PDFs, or call start_demo_audit.",
+      inputSchema: { type: "object", properties: {}, additionalProperties: false },
+      enabled: Boolean(run),
       stable: true,
     },
     {
@@ -615,8 +627,10 @@ export function snapshot(run: Run | null, webmcp: boolean, previousTools?: strin
       available_tools: tools,
       tools_changed: changed,
       refresh_hint: changed ? STALE_TOOL_MESSAGE : undefined,
+      next_action: "Call start_demo_audit, or wait for the human to drop three PDFs.",
     };
   }
+  const complete = isClosed(run);
   return {
     webmcp,
     status: run.status,
@@ -640,6 +654,9 @@ export function snapshot(run: Run | null, webmcp: boolean, previousTools?: strin
     available_tools: tools,
     tools_changed: changed,
     refresh_hint: changed ? STALE_TOOL_MESSAGE : undefined,
+    next_action: complete
+      ? "Audit closed. Do not reload this URL; it restores the same closed run. Call new_review for an empty desk, or start_demo_audit for a new Harbor run."
+      : undefined,
     findings:
       run.stage === "documents"
         ? undefined

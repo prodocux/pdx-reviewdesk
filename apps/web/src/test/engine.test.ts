@@ -105,7 +105,13 @@ describe("tool catalog follows backend run state", () => {
     const closed = runWith(ready.findings, { status: "approved", stage: "closed" });
     expect(names(closed)).toContain("export_audit_package");
     expect(names(closed)).toContain("verify_package");
+    expect(names(closed)).toContain("new_review");
+    expect(names(closed)).toContain("start_demo_audit");
     expect(names(closed)).not.toContain("record_approval");
+    expect(availableTools(closed).find((tool) => tool.name === "start_demo_audit")?.description).toContain(
+      "Do not reload",
+    );
+    expect(snapshot(closed, true).next_action).toContain("new_review");
   });
 
   it("does not advertise a revision schema while find-ph is focused", () => {
@@ -176,7 +182,10 @@ describe("tool catalog follows backend run state", () => {
       .filter((tool) => tool.enabled)
       .map((tool) => tool.name);
     expect(idle).toContain("run_benchmark");
+    expect(idle).toContain("start_demo_audit");
     expect(idle).not.toContain("assign_finding");
+    expect(idle).not.toContain("new_review");
+    expect(snapshot(null, true).next_action).toContain("start_demo_audit");
 
     const findings = runWith(
       [finding("formula-version", "needs_review"), finding("ph-range", "needs_review")],

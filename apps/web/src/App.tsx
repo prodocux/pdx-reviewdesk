@@ -36,7 +36,17 @@ import {
 import { stageEvents } from "./lib/stageLog";
 import type { Actor, BenchmarkResult, DocumentId, DossierInfo, Finding, Run, UiStage, VerifyResult } from "./lib/types";
 import { ToolHost, getModelContext } from "./lib/webmcp";
-import { pathRunId, rememberRun, rememberedRunId, runPath, RUN_CHANNEL } from "./lib/session";
+import {
+  clearClosedBounce,
+  goHome,
+  markClosedRun,
+  pathRunId,
+  rememberRun,
+  rememberedRunId,
+  runPath,
+  RUN_CHANNEL,
+  shouldBounceClosedRun,
+} from "./lib/session";
 
 const LABELS: Record<DocumentId, string> = {
   "product-spec": "Product specification",
@@ -106,6 +116,11 @@ export default function App() {
     setRun(next);
     if (next) {
       rememberRun(next.run_id);
+      if (isClosed(next) && runRef.current?.run_id === next.run_id) {
+        markClosedRun(next.run_id);
+      } else if (!isClosed(next)) {
+        clearClosedBounce();
+      }
       if (opts?.syncUrl !== false && pathRunId() !== next.run_id) {
         window.history.pushState({ runId: next.run_id }, "", runPath(next.run_id));
       }
@@ -113,6 +128,11 @@ export default function App() {
         busRef.current?.postMessage({ type: "run", run: next });
       } catch {
         /* channel closed */
+      }
+    } else {
+      rememberRun(null);
+      if (opts?.syncUrl !== false && pathRunId()) {
+        window.history.pushState({}, "", "/");
       }
     }
   }, []);
@@ -171,13 +191,18 @@ export default function App() {
 
   useEffect(() => {
     listDossiers().then(setDossiers).catch(() => undefined);
-    const id = pathRunId() ?? rememberedRunId();
+    const id = pathRunId();
+    if (id && shouldBounceClosedRun(id)) {
+      window.history.replaceState({}, "", "/");
+      getRun(id).then(setResumeHint).catch(() => undefined);
+      return;
+    }
     if (!id) return;
     getRun(id)
-      .then((loaded) => commitRun(loaded, { syncUrl: Boolean(pathRunId()) ? false : true }))
+      .then((loaded) => commitRun(loaded, { syncUrl: false }))
       .catch(() => {
         rememberRun(null);
-        if (pathRunId()) window.history.replaceState({}, "", "/");
+        window.history.replaceState({}, "", "/");
       });
   }, [commitRun]);
 
@@ -226,6 +251,7 @@ export default function App() {
       getRun(current.run_id)
         .then((loaded) => {
           if (loaded.updated_at && loaded.updated_at !== current.updated_at) {
+            if (isClosed(loaded)) markClosedRun(loaded.run_id);
             setRun(loaded);
           }
         })
@@ -270,6 +296,22 @@ export default function App() {
           setVerify(undefined);
           setUploads({});
           return wrapSnap(next);
+        },
+        new_review: async (_input: Record<string, unknown> = {}) => {
+          const currentRun = runRef.current;
+          if (currentRun && isClosed(currentRun)) markClosedRun(currentRun.run_id);
+          setShowCorrection(false);
+          setVerify(undefined);
+          setUploads({});
+          setError(undefined);
+          const snap = snapshot(null, Boolean(getModelContext()), toolsRef.current);
+          toolsRef.current = snap.available_tools;
+          if (pathRunId()) {
+            window.setTimeout(() => goHome(), 50);
+          } else {
+            commitRunRef.current(null);
+          }
+          return snap;
         },
         run_benchmark: async (_input: Record<string, unknown> = {}) => {
           const result = await runBenchmark();
@@ -437,13 +479,22 @@ export default function App() {
     };
   }, [run, handlers]);
 
+  async function clearDesk() {
+    const currentRun = runRef.current;
+    if (currentRun && isClosed(currentRun)) markClosedRun(currentRun.run_id);
+    if (pathRunId()) {
+      goHome();
+      return;
+    }
+    commitRun(null);
+    setShowCorrection(false);
+    setVerify(undefined);
+    setUploads({});
+    setError(undefined);
+  }
+
   async function humanStart(dossierId?: string) {
-    if (
-      run &&
-      !window.confirm(
-        `Judge mode reset starts a NEW run. The current run stays at ${runPath(run.run_id)}.`,
-      )
-    ) {
+    if (run && !isClosed(run) && !window.confirm(`Start a NEW run? The current run stays at ${runPath(run.run_id)}.`)) {
       return;
     }
     await withActor(async () => {
@@ -545,11 +596,15 @@ export default function App() {
           )}
           <button
             className="run"
-            onClick={() => humanStart("harbor-calm-serum-2026")}
+            onClick={() => (closed ? void clearDesk() : humanStart("harbor-calm-serum-2026"))}
             disabled={busy}
-            title="Starts a new run. The current run remains available at its URL."
+            title={
+              closed
+                ? "Leave this closed audit and return to the empty desk. The run stays at its URL."
+                : "Starts a new Harbor run. The current run remains available at its URL."
+            }
           >
-            {busy ? "Working…" : "Judge mode reset"}
+            {busy ? "Working…" : closed ? "New review" : "Judge mode reset"}
           </button>
           <span className={`status ${webmcp ? "live" : ""}`} title="Technical status">
             <i />
@@ -640,8 +695,9 @@ export default function App() {
           <small>Ready</small>
           <h2>Choose a dossier. Judge mode is Harbor Calm Serum.</h2>
           <p>
-            Same ProDocuX checks, different planted discrepancies. Cedar Night Cream only fails formula
-            revision, so the result cannot be a hardcoded Harbor story.
+            {resumeHint
+              ? "The previous audit is closed. Drop three PDFs or start Harbor again. Resume only if you need to inspect that closed run."
+              : "Same ProDocuX checks, different planted discrepancies. Cedar Night Cream only fails formula revision, so the result cannot be a hardcoded Harbor story."}
           </p>
           <div className="card-actions">
             {resumeHint && (
@@ -1119,7 +1175,7 @@ export default function App() {
                   <h2>Audit closed</h2>
                   <p>
                     Original source files are unchanged. The reviewed subject PDF is a new artifact, not a
-                    rewrite of the locked original.
+                    rewrite of the locked original. Call new_review or use New review to start again.
                   </p>
                   {verify && (
                     <p>{verify.ok ? `Bundle verified · status ${verify.status}.` : "Verification failed."}</p>
@@ -1135,6 +1191,9 @@ export default function App() {
                     />
                   ) : null}
                   <div className="card-actions">
+                    <button className="primary" type="button" onClick={() => void clearDesk()}>
+                      New review
+                    </button>
                     <a className="file primary-link" download href={subjectFileUrl(run.run_id)}>
                       Download reviewed copy
                     </a>

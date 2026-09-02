@@ -16,6 +16,8 @@ tools list.
 
 `get_workspace_state` returns the current run from the last API payload:
 findings (ProDocuX), checkpoint id (PDX), open document, and enabled tools.
+When the audit is closed, `next_action` tells the agent to call `new_review`
+or `start_demo_audit` instead of reloading the run URL.
 
 ## Human in the loop
 

@@ -1,5 +1,6 @@
 const API = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
 const ACTIVE_KEY = "reviewdesk.active_run_id";
+const CLOSED_BOUNCE_KEY = "reviewdesk.bounce_closed_run";
 export const RUN_CHANNEL = "reviewdesk-run";
 
 type Capabilities = { human: string; agent: string };
@@ -64,4 +65,34 @@ export function rememberRun(runId: string | null): void {
 
 export function runPath(runId: string): string {
   return `/runs/${runId}`;
+}
+
+export function markClosedRun(runId: string): void {
+  try {
+    sessionStorage.setItem(CLOSED_BOUNCE_KEY, runId);
+  } catch {
+    /* private mode */
+  }
+}
+
+export function clearClosedBounce(): void {
+  try {
+    sessionStorage.removeItem(CLOSED_BOUNCE_KEY);
+  } catch {
+    /* private mode */
+  }
+}
+
+export function shouldBounceClosedRun(runId: string | null): boolean {
+  if (!runId) return false;
+  try {
+    return sessionStorage.getItem(CLOSED_BOUNCE_KEY) === runId;
+  } catch {
+    return false;
+  }
+}
+
+export function goHome(): void {
+  if (window.location.pathname === "/") return;
+  window.location.replace("/");
 }

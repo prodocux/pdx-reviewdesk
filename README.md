@@ -54,10 +54,11 @@ await context.registerTool(
 );
 ```
 
-Enabled tools include `start_demo_audit`, `get_workspace_state`,
+Enabled tools include `start_demo_audit`, `new_review`, `get_workspace_state`,
 `select_finding`, `open_source_document`, `propose_correction`,
 `commit_correction`, and `confirm_observed_fact`. Human-only approval is
-not registered.
+not registered. After **Audit closed**, do not reload the run URL; call
+`new_review` or `start_demo_audit`.
 
 ## Judge / WebMCP test
 
@@ -74,6 +75,9 @@ No login. Open [the hosted app](https://pdx-reviewdesk.onrender.com/)
    The human uses **Confirm observation**, then **Approve**. There is no
    WebMCP tool that confirms a human-assigned observation or records
    approval.
+6. After **Audit closed**, ask the agent to start again. It should call
+   `new_review` or `start_demo_audit`. Reloading `/runs/{id}` restores the
+   same closed audit.
 
 A timed walkthrough is in [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md).
 

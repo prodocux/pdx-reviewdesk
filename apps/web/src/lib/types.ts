@@ -165,6 +165,7 @@ export interface WorkspaceSnapshot {
   stage?: UiStage;
   tools_changed?: boolean;
   refresh_hint?: string;
+  next_action?: string;
   available_tools: string[];
   findings?: Array<{
     finding_id: string;
