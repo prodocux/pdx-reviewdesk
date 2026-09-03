@@ -1,5 +1,15 @@
 # Demo script (under 3 minutes)
 
+## Before recording
+
+Open [the live app](https://pdx-reviewdesk.onrender.com/) and wait until the
+empty desk says **Ready · API warm**. Render Free often takes 30–60 seconds
+to wake; ProDocuX itself is usually a few hundred milliseconds after that.
+Optionally open `/health` in another tab. Then drop the three PDFs.
+
+If **Open dropped dossier** still waits, the button shows `Waking API… Ns`
+then `Opening… Ns`. That wait is the host, not the checks.
+
 ## 0:00–0:20 — Problem
 
 A specification, an approved formula, and a certificate can disagree.

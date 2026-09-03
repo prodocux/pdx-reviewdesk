@@ -516,6 +516,23 @@ a.primary-link, a.file.primary-link {
   padding-top: 18px;
   border-top: 1px solid var(--line);
 }
+.wait-notice {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff7ea;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.wait-notice.busy {
+  border-color: var(--ink);
+}
+.wait-notice.warn {
+  border-color: var(--human);
+  background: #fdeee4;
+}
 .drop-board small, .drop-slot small {
   color: var(--human);
   font-size: 10px;

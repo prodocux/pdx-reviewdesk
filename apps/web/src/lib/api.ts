@@ -101,6 +101,15 @@ export function startDemo(actor: Actor, dossierId?: string, channel: InvocationC
   }, channel);
 }
 
+export async function pingHealth(): Promise<boolean> {
+  try {
+    const response = await fetch(`${API}/health`, { cache: "no-store" });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function startFromUploads(
   _actor: Actor,
   files: { subject: File; formula: File; coa: File },

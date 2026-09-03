@@ -16,6 +16,7 @@ import {
   isClosed,
   listDossiers,
   openSourceDocument,
+  pingHealth,
   proposeCorrection,
   recordApproval,
   rejectDraft,
@@ -34,6 +35,7 @@ import {
   verifyPackage,
 } from "./lib/api";
 import { stageEvents } from "./lib/stageLog";
+import { hostLabel, type HostStatus, type WaitPhase } from "./lib/waitCopy";
 import type { Actor, BenchmarkResult, DocumentId, DossierInfo, Finding, Run, UiStage, VerifyResult } from "./lib/types";
 import { ToolHost, getModelContext } from "./lib/webmcp";
 import {
@@ -102,6 +104,9 @@ export default function App() {
   const [benchmark, setBenchmark] = useState<BenchmarkResult>();
   const [resumeHint, setResumeHint] = useState<Run>();
   const [flash, setFlash] = useState<"webmcp" | null>(null);
+  const [apiStatus, setApiStatus] = useState<HostStatus>("unknown");
+  const [waitPhase, setWaitPhase] = useState<WaitPhase>("generic");
+  const [waitSec, setWaitSec] = useState(0);
   const runRef = useRef(run);
   runRef.current = run;
   const toolsRef = useRef<string[]>([]);
@@ -191,6 +196,10 @@ export default function App() {
 
   useEffect(() => {
     listDossiers().then(setDossiers).catch(() => undefined);
+    setApiStatus("waking");
+    pingHealth()
+      .then((ok) => setApiStatus(ok ? "ready" : "down"))
+      .catch(() => setApiStatus("down"));
     const id = pathRunId();
     if (id && shouldBounceClosedRun(id)) {
       window.history.replaceState({}, "", "/");
@@ -205,6 +214,42 @@ export default function App() {
         window.history.replaceState({}, "", "/");
       });
   }, [commitRun]);
+
+  useEffect(() => {
+    if (!busy) {
+      setWaitSec(0);
+      return;
+    }
+    const started = Date.now();
+    setWaitSec(0);
+    const timer = window.setInterval(() => setWaitSec(Math.floor((Date.now() - started) / 1000)), 250);
+    return () => window.clearInterval(timer);
+  }, [busy, waitPhase]);
+
+  useEffect(() => {
+    if (run) return;
+    const ping = () =>
+      pingHealth()
+        .then((ok) => setApiStatus(ok ? "ready" : "down"))
+        .catch(() => setApiStatus("down"));
+    const timer = window.setInterval(ping, 240_000);
+    const onVis = () => {
+      if (document.visibilityState === "visible") ping();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [run]);
+
+  useEffect(() => {
+    if (run) return;
+    if (!uploads["product-spec"] || !uploads.formula || !uploads.coa) return;
+    pingHealth()
+      .then((ok) => setApiStatus(ok ? "ready" : "down"))
+      .catch(() => setApiStatus("down"));
+  }, [run, uploads]);
 
   useEffect(() => {
     if (run || pathRunId()) return;
@@ -271,6 +316,7 @@ export default function App() {
       throw reason;
     } finally {
       setBusy(false);
+      setWaitPhase("generic");
     }
   }
 
@@ -290,6 +336,7 @@ export default function App() {
           snapshot(runRef.current, Boolean(getModelContext()), toolsRef.current),
         start_demo_audit: async (input: Record<string, unknown> = {}) => {
           const dossierId = input.dossier_id ? String(input.dossier_id) : undefined;
+          await pingHealth();
           const next = await startDemo("agent", dossierId, "webmcp");
           commitRunRef.current(next);
           setShowCorrection(false);
@@ -498,6 +545,10 @@ export default function App() {
       return;
     }
     await withActor(async () => {
+      setWaitPhase("wake");
+      const ok = await pingHealth();
+      setApiStatus(ok ? "ready" : "down");
+      setWaitPhase("start");
       const next = await startDemo("human", dossierId);
       commitRun(next);
       setShowCorrection(false);
@@ -521,6 +572,10 @@ export default function App() {
       return;
     }
     await withActor(async () => {
+      setWaitPhase("wake");
+      const ok = await pingHealth();
+      setApiStatus(ok ? "ready" : "down");
+      setWaitPhase("upload");
       const next = await startFromUploads("human", { subject, formula, coa });
       commitRun(next);
       setShowCorrection(false);
@@ -604,7 +659,7 @@ export default function App() {
                 : "Starts a new Harbor run. The current run remains available at its URL."
             }
           >
-            {busy ? "Working…" : closed ? "New review" : "Judge mode reset"}
+            {busy ? (waitSec > 0 ? `Working… ${waitSec}s` : "Working…") : closed ? "New review" : "Judge mode reset"}
           </button>
           <span className={`status ${webmcp ? "live" : ""}`} title="Technical status">
             <i />
@@ -692,7 +747,7 @@ export default function App() {
 
       {!run ? (
         <section className="empty panel">
-          <small>Ready</small>
+          <small>{hostLabel(apiStatus)}</small>
           <h2>Choose a dossier. Judge mode is Harbor Calm Serum.</h2>
           <p>
             {resumeHint
@@ -729,6 +784,9 @@ export default function App() {
           <DropSlots
             files={uploads}
             busy={busy}
+            waitSec={waitSec}
+            waitPhase={waitPhase}
+            host={apiStatus}
             onFile={(slot, file) =>
               setUploads((current) => {
                 const next = { ...current };

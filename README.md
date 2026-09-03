@@ -83,7 +83,9 @@ A timed walkthrough is in [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md).
 
 `GET /health` must report `prodocux: 0.3.0rc4` and
 `pdx_artifact_engine: 0.3.0a4`. Free Render may take about a minute to
-wake if the service has spun down.
+wake if the service has spun down. Before recording, wait until the empty
+desk says **Ready · API warm** (or open `/health`) so **Open dropped
+dossier** is not the cold-start request.
 
 ## What's next
 

@@ -1,4 +1,6 @@
 import type { DocumentId } from "../lib/types";
+import type { HostStatus, WaitPhase } from "../lib/waitCopy";
+import { WaitNotice } from "./WaitNotice";
 
 const SLOTS: Array<{
   id: DocumentId;
@@ -29,11 +31,17 @@ const SLOTS: Array<{
 export function DropSlots({
   files,
   busy,
+  waitSec = 0,
+  waitPhase = "generic",
+  host = "unknown",
   onFile,
   onStart,
 }: {
   files: Partial<Record<DocumentId, File>>;
   busy: boolean;
+  waitSec?: number;
+  waitPhase?: WaitPhase;
+  host?: HostStatus;
   onFile: (slot: DocumentId, file: File | null) => void;
   onStart: () => void;
 }) {
@@ -93,8 +101,19 @@ export function DropSlots({
           );
         })}
       </div>
+      <WaitNotice busy={busy} elapsedSec={waitSec} phase={waitPhase} host={host} />
       <button className="primary" disabled={busy || !ready} onClick={onStart}>
-        Open dropped dossier
+        {busy
+          ? waitPhase === "wake"
+            ? waitSec
+              ? `Waking API… ${waitSec}s`
+              : "Waking API…"
+            : waitPhase === "upload"
+              ? waitSec
+                ? `Opening… ${waitSec}s`
+                : "Opening…"
+              : "Working…"
+          : "Open dropped dossier"}
       </button>
     </div>
   );
